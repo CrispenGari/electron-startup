@@ -1,11 +1,25 @@
-const { ipcRenderer } = require("electron");
+const path = require("path");
+const notifier = require("node-notifier");
 
-window.document.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
+document.getElementById("btn").addEventListener("click", () => {
+  notifier.notify(
+    {
+      title: "Notification from Docker",
+      message: "Hello you are now a Docker Guru.",
+      icon: path.join(__dirname, "../docker.webp"), // Absolute path
+      sound: true, // Only Notification Center or Windows Toasters
+      wait: true, // Wait with callback, until user action is taken against notification
+    },
+    function (err, response) {
+      // Response is response from notification
+      console.log(response);
+    }
+  );
+  notifier.on("click", function (notifierObject, options) {
+    console.log("You clicked on the notification");
+  });
 
-  ipcRenderer.send("context-menu");
-});
-
-ipcRenderer.on("context-menu-command", (e, command) => {
-  console.log(command);
+  notifier.on("timeout", function (notifierObject, options) {
+    console.log("Notification timed out!");
+  });
 });
