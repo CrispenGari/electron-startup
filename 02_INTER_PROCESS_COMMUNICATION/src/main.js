@@ -1,5 +1,5 @@
 const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -12,10 +12,6 @@ const createWindow = () => {
   });
 
   win.loadFile(path.join(__dirname, "public/index.html"));
-
-  win.webContents.openDevTools({
-    mode: "bottom",
-  });
 };
 
 app.whenReady().then(() => {
@@ -31,17 +27,12 @@ app.on("window-all-closed", () => {
 
 // ipc communication
 
-ipcMain.on("context-menu", (e) => {
-  const template = [
-    {
-      label: "Menu Item 1",
-      click: () => {
-        e.sender.send("context-menu-command", "menu-item-1");
-      },
-    },
-    { type: "separator" },
-    { label: "Menu Item 2", type: "checkbox", checked: true },
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup(BrowserWindow.fromWebContents(e.sender));
+ipcMain.on("add", (e, args) => {
+  const solution = args.number1 + args.number2;
+  e.sender.send("solution", {
+    number1: args.number1,
+    number2: args.number2,
+    operation: "add",
+    answer: solution,
+  });
 });

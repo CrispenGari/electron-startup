@@ -1,40 +1,18 @@
-### Menus
+### Inter Process Communication (IPC)
 
-In this repository we are going to have a look at how to create and work with menus in electron. There are two types of menus in desktop apps which are:
+We have used this feature from the previous sub-repository. IPC allows us to make communication between our renderer and our main processes by providing two sub modules:
 
-1. application menus - the menus that appears on the top of the application window.
-2. context menus - the menus that pops up when you right click any where in the application window.
+1. `ipcMain`
 
-In this sub repository we are going to have a look at how we can create these two types of menus.
+Is used to communicate asynchronously from the main process to renderer processes. We can send the messages from and to the render using this module by make use of events.
 
-### Setup
+2. `ipcRenderer`
 
-For the set up we are going to create a package.json file in the `01_MENUS` folder and add the following code in it:
+Is used to communicate asynchronously from a renderer process to the main process. We can also use this module to send messages from and to the main process by use of events.
 
-```json
-{
-  "name": "01_MENUS",
-  "version": "1.0.0",
-  "description": "creating menus in electron",
-  "main": "main.js",
-  "author": "CrispenGari",
-  "license": "MIT",
-  "scripts": {
-    "start": "electron src/main.js"
-  },
-  "devDependencies": {
-    "electron": "^19.0.7"
-  }
-}
-```
+### Communication between the main and render
 
-After that we are gong to run:
-
-```shell
-yarn
-```
-
-This will install `electron` and we will create a file called `main.js` in the `src` folder. We are then going to create our `public/index.html` file and it will have the following code in it.
+We want to create a simple application that will takes numbers from form inputs and send them to the main process to do the multiplication of those two numbers in the main process. When the main process is done with the calculations we want to send back the answer to the render and display in the `DOM`. Our html file will look as follows:
 
 ```html
 <!DOCTYPE html>
@@ -46,239 +24,60 @@ This will install `electron` and we will create a file called `main.js` in the `
     <title>Menus</title>
   </head>
   <body>
-    <h1>Menus</h1>
+    <h1>IPC</h1>
+    <p>
+      <input type="text" placeholder="Enter Number 1" id="number1" />
+    </p>
+    <p>
+      <input type="text" placeholder="Enter Number 2" id="number2" />
+    </p>
+    <button id="btn">SEND</button>
+    <pre>
+      <code id="code"></code>
+    </pre>
+
+    <script src="../scripts/index.js"></script>
   </body>
 </html>
 ```
 
-### Application Menus
-
-We will start by creating application menus.Our menus are going to be created from the `main` process.
-
-```js
-const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem } = require("electron");
-
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-
-  win.loadFile(path.join(__dirname, "public/index.html"));
-
-  win.webContents.openDevTools({
-    mode: "bottom",
-  });
-};
-
-const template = [
-  {
-    label: "Edit",
-    submenu: [
-      {
-        role: "undo",
-      },
-      {
-        role: "redo",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "cut",
-      },
-      {
-        role: "copy",
-      },
-      {
-        role: "paste",
-      },
-    ],
-  },
-
-  {
-    label: "View",
-    submenu: [
-      {
-        role: "reload",
-      },
-      {
-        role: "toggledevtools",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "resetzoom",
-      },
-      {
-        role: "zoomin",
-      },
-      {
-        role: "zoomout",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "togglefullscreen",
-      },
-    ],
-  },
-
-  {
-    role: "window",
-    submenu: [
-      {
-        role: "minimize",
-      },
-      {
-        role: "close",
-      },
-    ],
-  },
-
-  {
-    role: "help",
-    submenu: [
-      {
-        label: "Learn More",
-      },
-    ],
-  },
-];
-
-const menu = Menu.buildFromTemplate([
-  ...template,
-  {
-    label: "Languages",
-    submenu: [
-      {
-        label: "Edit",
-        click() {
-          console.log("You clicked the edit");
-        },
-      },
-      {
-        label: "Languages",
-        submenu: [
-          {
-            checked: true,
-            label: "JavaScript",
-            click() {
-              console.log("You clicked JavaScript");
-            },
-          },
-          {
-            checked: false,
-            label: "TypeScript",
-            click() {
-              console.log("You clicked TypeScript");
-            },
-          },
-          {
-            type: "separator",
-          },
-          {
-            checked: false,
-            label: "Python",
-            click() {
-              console.log("You clicked Python");
-            },
-          },
-        ],
-      },
-    ],
-  },
-]);
-
-Menu.setApplicationMenu(menu);
-
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
-```
-
-### Context Menus
-
-We created our application menus in the `main` process. Next we are going to create our context menu in the `renderer`. We will create a file called `scripts/index.js` and we will link it with our html file.
+In the `renderer` which is our `index.js` we will have the following code in it:
 
 ```js
 const { ipcRenderer } = require("electron");
 
-window.document.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
-
-  ipcRenderer.send("context-menu");
+document.getElementById("btn").addEventListener("click", () => {
+  const num1 = Number.parseFloat(document.getElementById("number1").value);
+  const num2 = Number.parseFloat(document.getElementById("number2").value);
+  ipcRenderer.send("add", {
+    number1: num1,
+    number2: num2,
+    operation: "add",
+  });
 });
 
-ipcRenderer.on("context-menu-command", (e, command) => {
-  console.log(command);
+ipcRenderer.on("solution", (e, args) => {
+  document.getElementById("code").innerText = JSON.stringify(args, null, 2);
 });
 ```
 
-> As we can see we are using `Inter Process Communication` between the `Render` and the main `Main` in our `main.js` we will have the following code in it.
+In the `main` process we are going to have the following code in it.
 
 ```js
-const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem, ipcMain } = require("electron");
 
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-
-  win.loadFile(path.join(__dirname, "public/index.html"));
-
-  win.webContents.openDevTools({
-    mode: "bottom",
-  });
-};
-
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
-
+....
 // ipc communication
 
-ipcMain.on("context-menu", (e) => {
-  const template = [
-    {
-      label: "Menu Item 1",
-      click: () => {
-        e.sender.send("context-menu-command", "menu-item-1");
-      },
-    },
-    { type: "separator" },
-    { label: "Menu Item 2", type: "checkbox", checked: true },
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup(BrowserWindow.fromWebContents(e.sender));
+ipcMain.on("add", (e, args) => {
+  const solution = args.number1 + args.number2;
+  e.sender.send("solution", {
+    number1: args.number1,
+    number2: args.number2,
+    operation: "add",
+    answer: solution,
+  });
 });
+
 ```
 
-In the next section we are going to look at how the `Inter Process Communication` works between the renderer and the main.
+> That's all about the basics of `IPC`, in the next sub-repo we are going to look at the `SYSTEM TRAY`
