@@ -1,11 +1,23 @@
 const { ipcRenderer } = require("electron");
 
-window.document.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
+const textArea = document.getElementById("content");
 
-  ipcRenderer.send("context-menu");
+document.getElementById("btn1").addEventListener("click", () => {
+  ipcRenderer.send("open-file", {});
+});
+ipcRenderer.on("file-data", (ev, data) => {
+  textArea.innerText = data;
 });
 
-ipcRenderer.on("context-menu-command", (e, command) => {
-  console.log(command);
+document.getElementById("btn2").addEventListener("click", () => {
+  ipcRenderer.send("show-error", "This is an error message from the renderer.");
+});
+document.getElementById("btn3").addEventListener("click", () => {
+  ipcRenderer.send("show-message", "This is the message from the renderer");
+});
+document.getElementById("btn4").addEventListener("click", () => {
+  ipcRenderer.send("save-file", {
+    content: textArea.value,
+    fileName: "contents.txt",
+  });
 });

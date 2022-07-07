@@ -1,40 +1,15 @@
-### Menus
+### System Dialogs
 
-In this repository we are going to have a look at how to create and work with menus in electron. There are two types of menus in desktop apps which are:
+In this sub-repository we are going to have a look a system dialogs that if provided by `electron` in the module `dialog`. We are going to have a look of the following dialog boxes:
 
-1. application menus - the menus that appears on the top of the application window.
-2. context menus - the menus that pops up when you right click any where in the application window.
+1. showOpenDialog
+2. showSaveDialog
+3. showMessageDialog
+4. showErrorDialog
 
-In this sub repository we are going to have a look at how we can create these two types of menus.
+### web-page
 
-### Setup
-
-For the set up we are going to create a package.json file in the `01_MENUS` folder and add the following code in it:
-
-```json
-{
-  "name": "01_MENUS",
-  "version": "1.0.0",
-  "description": "creating menus in electron",
-  "main": "main.js",
-  "author": "CrispenGari",
-  "license": "MIT",
-  "scripts": {
-    "start": "electron src/main.js"
-  },
-  "devDependencies": {
-    "electron": "^19.0.7"
-  }
-}
-```
-
-After that we are gong to run:
-
-```shell
-yarn
-```
-
-This will install `electron` and we will create a file called `main.js` in the `src` folder. We are then going to create our `public/index.html` file and it will have the following code in it.
+In our `index.html` file we are going to add the following code that we will use throughout this example of showing how to work with system dialogs.
 
 ```html
 <!DOCTYPE html>
@@ -43,242 +18,152 @@ This will install `electron` and we will create a file called `main.js` in the `
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Menus</title>
+    <title>Dialogs</title>
+
+    <style>
+      #content {
+        width: 400px;
+        height: 200px;
+        margin: 10px auto;
+      }
+    </style>
   </head>
+
   <body>
-    <h1>Menus</h1>
+    <h1>Dialogs</h1>
+    <button id="btn1">Open File</button>
+    <button id="btn2">Show Error Message</button>
+    <button id="btn3">Show Message</button>
+    <button id="btn4">Save File</button>
+    <textarea name="" id="content" cols="30" rows="10"></textarea>
+    <script src="../scripts/index.js"></script>
   </body>
 </html>
 ```
 
-### Application Menus
+### showOpenDialog
 
-We will start by creating application menus.Our menus are going to be created from the `main` process.
-
-```js
-const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem } = require("electron");
-
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-
-  win.loadFile(path.join(__dirname, "public/index.html"));
-
-  win.webContents.openDevTools({
-    mode: "bottom",
-  });
-};
-
-const template = [
-  {
-    label: "Edit",
-    submenu: [
-      {
-        role: "undo",
-      },
-      {
-        role: "redo",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "cut",
-      },
-      {
-        role: "copy",
-      },
-      {
-        role: "paste",
-      },
-    ],
-  },
-
-  {
-    label: "View",
-    submenu: [
-      {
-        role: "reload",
-      },
-      {
-        role: "toggledevtools",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "resetzoom",
-      },
-      {
-        role: "zoomin",
-      },
-      {
-        role: "zoomout",
-      },
-      {
-        type: "separator",
-      },
-      {
-        role: "togglefullscreen",
-      },
-    ],
-  },
-
-  {
-    role: "window",
-    submenu: [
-      {
-        role: "minimize",
-      },
-      {
-        role: "close",
-      },
-    ],
-  },
-
-  {
-    role: "help",
-    submenu: [
-      {
-        label: "Learn More",
-      },
-    ],
-  },
-];
-
-const menu = Menu.buildFromTemplate([
-  ...template,
-  {
-    label: "Languages",
-    submenu: [
-      {
-        label: "Edit",
-        click() {
-          console.log("You clicked the edit");
-        },
-      },
-      {
-        label: "Languages",
-        submenu: [
-          {
-            checked: true,
-            label: "JavaScript",
-            click() {
-              console.log("You clicked JavaScript");
-            },
-          },
-          {
-            checked: false,
-            label: "TypeScript",
-            click() {
-              console.log("You clicked TypeScript");
-            },
-          },
-          {
-            type: "separator",
-          },
-          {
-            checked: false,
-            label: "Python",
-            click() {
-              console.log("You clicked Python");
-            },
-          },
-        ],
-      },
-    ],
-  },
-]);
-
-Menu.setApplicationMenu(menu);
-
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
-```
-
-### Context Menus
-
-We created our application menus in the `main` process. Next we are going to create our context menu in the `renderer`. We will create a file called `scripts/index.js` and we will link it with our html file.
+This dialog box is used when we want to open a file on our system. We are going to read the file and write the data in the textarea. So in our renderer we will have the following code:
 
 ```js
 const { ipcRenderer } = require("electron");
 
-window.document.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
+const textArea = document.getElementById("content");
 
-  ipcRenderer.send("context-menu");
+document.getElementById("btn1").addEventListener("click", () => {
+  ipcRenderer.send("open-file", {});
 });
-
-ipcRenderer.on("context-menu-command", (e, command) => {
-  console.log(command);
+ipcRenderer.on("file-data", (ev, data) => {
+  textArea.innerText = data;
 });
 ```
 
-> As we can see we are using `Inter Process Communication` between the `Render` and the main `Main` in our `main.js` we will have the following code in it.
+In the main process we are going to have the following code in it:
 
 ```js
-const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem, ipcMain } = require("electron");
-
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-
-  win.loadFile(path.join(__dirname, "public/index.html"));
-
-  win.webContents.openDevTools({
-    mode: "bottom",
-  });
-};
-
-app.whenReady().then(() => {
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+...
+ipcMain.on("open-file", (event, args) => {
+  dialog
+    .showOpenDialog({
+      message: "Select a file.",
+      defaultPath: "/",
+      title: "File Opener",
+      buttonLabel: "Select",
+    })
+    .then(({ canceled, filePaths }) => {
+      if (canceled) {
+        console.log("Dialog Canceled");
+      } else {
+        const contents = fs.readFileSync(filePaths[0], { encoding: "utf8" });
+        event.sender.send("file-data", contents);
+      }
+    });
 });
+...
+```
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+### showSaveDialog
 
-// ipc communication
+This dialog box is used to save the files to our local system. We are going to illustrate how to save save the contents that is in the textArea to a `contents.txt` file, In our renderer we are going to have the following code in it:
 
-ipcMain.on("context-menu", (e) => {
-  const template = [
-    {
-      label: "Menu Item 1",
-      click: () => {
-        e.sender.send("context-menu-command", "menu-item-1");
-      },
-    },
-    { type: "separator" },
-    { label: "Menu Item 2", type: "checkbox", checked: true },
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup(BrowserWindow.fromWebContents(e.sender));
+```js
+document.getElementById("btn4").addEventListener("click", () => {
+  ipcRenderer.send("save-file", {
+    content: textArea.value,
+    fileName: "contents.txt",
+  });
 });
 ```
 
-In the next section we are going to look at how the `Inter Process Communication` works between the renderer and the main.
+In the main process we are going to have the following code in it:
+
+```js
+ipcMain.on("save-file", (ev, args) => {
+  dialog
+    .showSaveDialog({
+      message: "Save File As",
+      buttonLabel: "Save",
+      title: "Saving a File",
+      defaultPath: path.join(__dirname, args.fileName),
+    })
+    .then(({ filePath, canceled }) => {
+      if (canceled) return;
+      fs.writeFileSync(filePath, args.content, {
+        encoding: "utf8",
+      });
+      console.log("saved");
+    });
+});
+```
+
+A file called `contents.txt` will be created with the typed text in the textarea.
+
+### showErrorDialog
+
+This dialog box is used to display errors. In this simple example we are going to show how to display error messages using the `showErrorDialog`.
+
+```js
+document.getElementById("btn2").addEventListener("click", () => {
+  ipcRenderer.send("show-error", "This is an error message from the renderer.");
+});
+```
+
+In the main process we are going to have the following code in it.
+
+```js
+ipcMain.on("show-error", (e, args) => {
+  dialog.showErrorBox("Error Dialog", args);
+});
+```
+
+### showMessageDialog
+
+This dialog box is used to display messages. In this example we are going to click the button on the renderer and send the message to the main to display it in the message dialog.
+
+```js
+document.getElementById("btn3").addEventListener("click", () => {
+  ipcRenderer.send("show-message", "This is the message from the renderer");
+});
+```
+
+In the main process we are going to have the following code in it.
+
+```js
+ipcMain.on("show-message", (e, args) => {
+  dialog
+    .showMessageBox({
+      title: "Message Dialog",
+      message: args,
+      type: "info",
+      buttons: ["okay", "cancel", "close"],
+      defaultId: 2,
+    })
+    .then((res) => console.log(res));
+});
+```
+
+> For more options of dialog boxes you can read the docs. In the next section we are going to show how to define shortcuts.
+
+### Ref.
+
+1. [electronjs.org](https://www.electronjs.org/docs/latest/api/dialog)

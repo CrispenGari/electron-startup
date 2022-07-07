@@ -1,5 +1,6 @@
 const path = require("path");
-const { app, BrowserWindow, Menu, MenuItem, ipcMain } = require("electron");
+const fs = require("fs");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -31,17 +32,53 @@ app.on("window-all-closed", () => {
 
 // ipc communication
 
-ipcMain.on("context-menu", (e) => {
-  const template = [
-    {
-      label: "Menu Item 1",
-      click: () => {
-        e.sender.send("context-menu-command", "menu-item-1");
-      },
-    },
-    { type: "separator" },
-    { label: "Menu Item 2", type: "checkbox", checked: true },
-  ];
-  const menu = Menu.buildFromTemplate(template);
-  menu.popup(BrowserWindow.fromWebContents(e.sender));
+ipcMain.on("open-file", (event, args) => {
+  dialog
+    .showOpenDialog({
+      message: "Select a file.",
+      defaultPath: "/",
+      title: "File Opener",
+      buttonLabel: "Select",
+    })
+    .then(({ canceled, filePaths }) => {
+      if (canceled) {
+        console.log("Dialog Canceled");
+      } else {
+        const contents = fs.readFileSync(filePaths[0], { encoding: "utf8" });
+        event.sender.send("file-data", contents);
+      }
+    });
+});
+
+ipcMain.on("save-file", (ev, args) => {
+  dialog
+    .showSaveDialog({
+      message: "Save File As",
+      buttonLabel: "Save",
+      title: "Saving a File",
+      defaultPath: path.join(__dirname, args.fileName),
+    })
+    .then(({ filePath, canceled }) => {
+      if (canceled) return;
+      fs.writeFileSync(filePath, args.content, {
+        encoding: "utf8",
+      });
+      console.log("saved");
+    });
+});
+
+ipcMain.on("show-message", (e, args) => {
+  dialog
+    .showMessageBox({
+      title: "Message Dialog",
+      message: args,
+      type: "info",
+      buttons: ["okay", "cancel", "close"],
+      defaultId: 2,
+    })
+    .then((res) => console.log(res));
+});
+
+ipcMain.on("show-error", (e, args) => {
+  dialog.showErrorBox("Error Dialog", args);
 });
