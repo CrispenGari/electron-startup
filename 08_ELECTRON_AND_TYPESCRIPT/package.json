@@ -1,0 +1,19 @@
+{
+  "name": "08_ELECTRON_AND_TYPESCRIPT",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "CrispenGari",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "yarn build && electron dist/main.js"
+  },
+  "dependencies": {
+    "electron": "^19.0.8"
+  },
+  "devDependencies": {
+    "@types/electron": "^1.6.10",
+    "@types/node": "^18.0.3",
+    "typescript": "^4.7.4"
+  }
+}
