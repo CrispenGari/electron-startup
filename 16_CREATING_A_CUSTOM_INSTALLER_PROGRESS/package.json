@@ -2,11 +2,11 @@
   "name": "app",
   "version": "1.0.0",
   "description": "creating menus in electron",
-  "main": "main.js",
+  "main": "src/main.js",
   "author": "CrispenGari",
   "license": "MIT",
   "scripts": {
-    "start": "electron src/main.js"
+    "start": "electron ."
   },
   "devDependencies": {
     "electron": "^19.0.7"
